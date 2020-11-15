@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="icon" href="/res/favicon.ico">
+        <title>
+            TeaServ Testbed
+        </title>
+        <style>
+            .header {
+                max-width: 1000px;
+                margin: auto;
+            }
+            .content {
+              max-width: 500px;
+              margin: auto;
+            }
+        </style>
+        <script>
+            var myVar = setInterval(refresh, 5000);
+            function refresh()
+            {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function()
+                {
+                    if (this.readyState == 4 && this.status == 200)
+                    {
+                        if (this.responseText == "true")
+                        {
+                            window.alert("Cat spotted");
+                            //clearInterval(myVar);
+                        }
+                    }
+                };
+                xhttp.open("GET", "/refresh", true);
+                xhttp.send();
+            }
+        </script>
+    </head>
+    <body>
+        <div class="header">
+            <h1>
+                This page will send an alert if somebody has sighted a cat.
+            </h1>
+            <div class="content">
+                <div>
+                    <img src="res/stickman.png" height="200px">
+                    <img src="res/cat.png" height="200px">
+                </div>
+                <br>
+                <span>Press the button to alert everyone that <i><b>THERE IS A CAT</b></i> </span>
+                <br><br>
+                <form action="/" method="POST" enctype="multipart/form-data">
+                    <input type="submit" name="cat">
+                </form>
+            </div>
+        </div>
+    </body>
+</html>
