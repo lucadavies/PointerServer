@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <link rel="icon" href="/res/favicon.ico">
         <title>
             TeaServ Testbed
         </title>
         <style>
+            html {
+                height: 100%;
+            }
+            body {
+                background-image: url('res/pointerhouse.png');
+                background-position: center;
+                background-repeat: no-repeat; 
+                background-size: cover;
+            }
             .header {
                 max-width: 1000px;
                 margin: auto;
+                
+                
             }
             .content {
               max-width: 500px;
@@ -36,7 +46,7 @@
             }
         </script>
     </head>
-    <body>
+    <body style="font-family: sans-serif;">
         <div class="header">
             <h1>
                 This page will send an alert if somebody has sighted a cat.
@@ -50,6 +60,8 @@
                 <span>Press the button to alert everyone that <i><b>THERE IS A CAT</b></i> </span>
                 <br><br>
                 <form action="/" method="POST" enctype="multipart/form-data">
+                    <label for="duration">Alert duration (s): </label>
+                    <input type="number" value="30" name="duration" style="width:50px">
                     <input type="submit" name="cat">
                 </form>
             </div>

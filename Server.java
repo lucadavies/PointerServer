@@ -2,7 +2,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
@@ -41,25 +40,25 @@ enum RequestType {
 
 class Timer implements Runnable
 {
-    int time = 1000;
     boolean isComplete = true;
 
     public Timer(int time)
     {
-        this.time = time;
         isComplete = false;
-
     }
+
     public void run()
     {
         try
         {
-            Thread.sleep(time);
+            System.out.println("timer sleeping for " + Server.time + "ms...");
+            Thread.sleep(Server.time);
         }
         catch (Exception e)
         {
             System.err.println("Timer interrupted.");
         }
+        System.out.println("timer finished.");
         Server.setCatStatus(false);
     }
 }
@@ -68,6 +67,7 @@ public class Server {
 
     static String resp404 = "<html><body><h1>404: Page not found</h3><a href=\"/\">Return to root</a></body></html>";
     static Timer catReset = new Timer(20000);
+    static int time = 20000;
     private static boolean catSpotted = false;
     
     public static void main(String[] args) throws Exception {
@@ -146,10 +146,13 @@ public class Server {
             else if (uri.matches("/refresh"))
             {
                 resp = "false".getBytes();
-                if (Server.getCatStatus())
+                if (getCatStatus())
                 {
                     resp = "true".getBytes();
-                } 
+                }
+                t.getResponseHeaders().set("content-type", "attachment");
+                t.sendResponseHeaders(200, resp.length);
+                t.getResponseBody().write(resp);
             }
             else
             {
@@ -165,9 +168,34 @@ public class Server {
             if (uri.matches("/$"))
             {
                 //Read form data somehow
-                byte[] resp = "<html><body>Form reading not yet implemented.</body></html>".getBytes();
+                String data = new String(t.getRequestBody().readAllBytes());
+                if (!catSpotted && data.contains("name=\"cat\""))
+                {
+                    int index = data.indexOf("name=\"duration\"");
+                    if (index != -1)
+                    {
+                        System.out.println(data);
+                        int i2 = data.indexOf("------", index + 15);
+                        data = data.substring(index + 15, i2);
+                        data = data.replace("\r", "");
+                        data = data.replace("\n", "");
+                        try 
+                        {
+                            time = Integer.parseInt(data) * 1000;
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            System.err.println("Unable to parse duration value.");
+                        }
+                        
+                    }
+                    setCatStatus(true);
+                    new Thread(catReset).start();
+                    
+                }
+                byte[] resp = getHTML("index.html");
                 t.getResponseHeaders().set("content-type", "text/html");
-                t.sendResponseHeaders(404, resp.length);
+                t.sendResponseHeaders(200, resp.length);
                 t.getResponseBody().write(resp);
             }
         }
