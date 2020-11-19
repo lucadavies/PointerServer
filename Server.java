@@ -1,10 +1,14 @@
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
+import java.io.File;
+import java.io.BufferedReader;
+import java.nio.file.Files;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -167,8 +171,8 @@ public class Server {
         {
             if (uri.matches("/$"))
             {
-                //Read form data somehow
-                String data = new String(t.getRequestBody().readAllBytes());
+                // hate this but Java 8 affords not many better ways
+                String data = new BufferedReader(new InputStreamReader(t.getRequestBody())).lines().collect(Collectors.joining("\n"));
                 if (!catSpotted && data.contains("name=\"cat\""))
                 {
                     int index = data.indexOf("name=\"duration\"");
@@ -247,9 +251,7 @@ public class Server {
 
     private static byte[] getHTML(String name) throws IOException
     {
-        FileInputStream f = new FileInputStream(name);
-        byte[] html = f.readAllBytes();
-        f.close();
+        byte[] html = Files.readAllBytes(new File(name).toPath());
         return html;
     }
 
@@ -258,9 +260,7 @@ public class Server {
         byte[] data = null;
         try 
         {
-            FileInputStream f = new FileInputStream(filename);
-            data = f.readAllBytes();
-            f.close();
+            data = Files.readAllBytes(new File(filename).toPath());
         }
         catch (IOException e)
         {
