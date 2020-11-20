@@ -1,46 +1,19 @@
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.BufferedReader;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-
-class HTTPRequest
-{
-    RequestType type;
-    String resource;
-    HTTPHeader headers[];
-
-    String getHeaderValue(String key)
-    {
-        for (int i = 0; i < headers.length; i++)
-        {
-            if (headers[i].key.equals(key))
-                return headers[i].value;
-        }
-
-        return null;
-    }
-}
-
-class HTTPHeader {
-    String key;
-    String value;
-}
-
-enum RequestType {
-    GET,
-    POST
-}
 
 class Timer implements Runnable
 {
@@ -55,8 +28,8 @@ class Timer implements Runnable
     {
         try
         {
-            System.out.println("timer sleeping for " + Server.time + "ms...");
-            Thread.sleep(Server.time);
+            System.out.println("timer sleeping for " + Server.catTime + "ms...");
+            Thread.sleep(Server.catTime);
         }
         catch (Exception e)
         {
@@ -67,14 +40,21 @@ class Timer implements Runnable
     }
 }
 
-public class Server {
+public class Server
+{
 
     static String resp404 = "<html><body><h1>404: Page not found</h3><a href=\"/\">Return to root</a></body></html>";
     static Timer catReset = new Timer(20000);
-    static int time = 20000;
+    static int catTime;
     private static boolean catSpotted = false;
-    
-    public static void main(String[] args) throws Exception {
+    static String logPath = "server.log";
+    static PrintWriter log;
+    static LocalDateTime time;
+    static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSS");
+
+    public static void main(String[] args) throws Exception 
+    {
+        log = new PrintWriter(logPath);
         HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
         server.createContext("/", new HanRoot());
         server.createContext("/res", new HanRes());
@@ -84,15 +64,16 @@ public class Server {
     }
 
     static boolean getCatStatus()
-	{
-		return catSpotted;
-	}
+    {
+        return catSpotted;
+    }
 
-	static void setCatStatus(boolean cat)
-	{
-		System.out.println("setting cat to: " + cat);
-		catSpotted = cat;
-	}
+    static void setCatStatus(boolean cat)
+    {
+        log("setting cat to: " + cat);
+        System.out.println("setting cat to: " + cat);
+        catSpotted = cat;
+    }
 
     static class HanRoot implements HttpHandler
     {
@@ -101,29 +82,32 @@ public class Server {
         public void handle(HttpExchange httpEx) throws IOException
         {
             this.t = httpEx;
-            String method =  t.getRequestMethod();
-            String headers = "";
-            for (Map.Entry<String, List<String>> h : t.getRequestHeaders().entrySet())
-            {
-                headers += (h + "\n");
-            }
-            String rHeaders = "";
-            for (Map.Entry<String, List<String>> h : t.getResponseHeaders().entrySet())
-            {
-                rHeaders += (h + "\n");
-            }
+            String method = t.getRequestMethod();
+            // String headers = "";
+            // for (Map.Entry<String, List<String>> h : t.getRequestHeaders().entrySet())
+            // {
+            // headers += (h + "\n");
+            // }
+            // String rHeaders = "";
+            // for (Map.Entry<String, List<String>> h : t.getResponseHeaders().entrySet())
+            // {
+            // rHeaders += (h + "\n");
+            // }
             // System.out.println("Method: " + method);
             // System.out.println("Headers:\n" + headers);
             // System.out.println("RespHeaders: " + rHeaders);
 
             if (method.equals("GET"))
             {
-                System.out.println(t.getRemoteAddress() + "| GET: " + t.getRequestURI().toString() + " (HanRoot)");
+                String s = t.getRemoteAddress() + "| GET: " + t.getRequestURI().toString() + " (HanRoot)";
+                log(s);
+                System.out.println(s);
                 get(t.getRequestURI().toString());
-            }
-            else if (method.equals("POST"))
+            } else if (method.equals("POST"))
             {
-                System.out.println(t.getRemoteAddress() + "| POST: " + t.getRequestURI().toString() + " (HanRoot)");
+                String s = t.getRemoteAddress() + "| POST: " + t.getRequestURI().toString() + " (HanRoot)";
+                log(s);
+                System.out.println(s);
                 post(t.getRequestURI().toString(), null);
 
             }
@@ -139,15 +123,13 @@ public class Server {
                 t.getResponseHeaders().set("content-type", "text/html");
                 t.sendResponseHeaders(200, resp.length);
                 t.getResponseBody().write(resp);
-            }
-            else if (uri.matches("/favicon.ico"))
+            } else if (uri.matches("/favicon.ico"))
             {
                 resp = getFile("favicon.ico");
                 t.getResponseHeaders().set("content-type", "attachment");
                 t.sendResponseHeaders(200, resp.length);
                 t.getResponseBody().write(resp);
-            }
-            else if (uri.matches("/refresh"))
+            } else if (uri.matches("/refresh"))
             {
                 resp = "false".getBytes();
                 if (getCatStatus())
@@ -173,29 +155,23 @@ public class Server {
             {
                 // hate this but Java 8 affords not many better ways
                 String data = new BufferedReader(new InputStreamReader(t.getRequestBody())).lines().collect(Collectors.joining("\n"));
-                if (!catSpotted && data.contains("name=\"cat\""))
+                HashMap<String, String> form = parseForm(data);
+                if (form.keySet().contains("cat"))
                 {
-                    int index = data.indexOf("name=\"duration\"");
-                    if (index != -1)
+                    catTime = 20000;
+                    if (form.keySet().contains("duration"))
                     {
-                        System.out.println(data);
-                        int i2 = data.indexOf("------", index + 15);
-                        data = data.substring(index + 15, i2);
-                        data = data.replace("\r", "");
-                        data = data.replace("\n", "");
                         try 
                         {
-                            time = Integer.parseInt(data) * 1000;
+                            catTime = Integer.parseInt(form.get("duration")) * 1000;
                         }
                         catch (NumberFormatException e)
                         {
                             System.err.println("Unable to parse duration value.");
                         }
-                        
                     }
                     setCatStatus(true);
                     new Thread(catReset).start();
-                    
                 }
                 byte[] resp = getHTML("index.html");
                 t.getResponseHeaders().set("content-type", "text/html");
@@ -216,12 +192,16 @@ public class Server {
            
             if (method.equals("GET"))
             {
-                System.out.println(t.getRemoteAddress() + "| GET: " + t.getRequestURI().toString() + " (HanRes)");
+                String s = t.getRemoteAddress() + "| GET: " + t.getRequestURI().toString() + " (HanRes)";
+                log(s);
+                System.out.println(s);
                 get(t.getRequestURI().toString());
             }
             else if (method.equals("POST"))
             {
-                System.out.println(t.getRemoteAddress() + "| POST: " + t.getRequestURI().toString() + " (HanRes)");
+                String s = t.getRemoteAddress() + "| POST: " + t.getRequestURI().toString() + " (HanRes)";
+                log(s);
+                System.out.println(s);
                 byte[] resp = resp404.getBytes();
                 t.getResponseHeaders().set("content-type", "text/html");
                 t.sendResponseHeaders(404, resp.length);
@@ -269,74 +249,48 @@ public class Server {
         return data;
     }
 
-    //this function read and parses a HTTP request from its text format into a HTTPRequest object
-    static HTTPRequest parseRequest(InputStream input) throws IOException
+    private static HashMap<String, String> parseForm(String data)
     {
-        HTTPRequest req = new HTTPRequest();
-        
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        
-        int b;
-        byte last4[] = new byte[4];
-        
-        while ((b = input.read()) != -1)
+        HashMap<String, String> form = new HashMap<String, String>();
+        int index = 0;
+        int prevIndex;
+        while (true)
+        {
+            prevIndex = index;
+            index = data.indexOf("form-data; name=\"", index) + 17; //start of field name
+            if (index != -1 && index > prevIndex)
             {
-            buf.write(b);
-            
-            last4[0] = last4[1];
-            last4[1] = last4[2];
-            last4[2] = last4[3];
-            last4[3] = (byte) b;
-            
-            if (last4[0] == '\r' && last4[1] == '\n' && last4[2] == '\r' && last4[3] == '\n')
-                {
+                int start = index;
+                int end = data.indexOf("\"", start);                //end of field name
+                String key = data.substring(start, end);
+                start = end + 3;                             //end of field name: start of data (less leading \n\n)
+                end = data.indexOf("------WebKit", end) - 1;    //end of data (less trailing \n);
+                String value = data.substring(start, end);
+                form.put(key, value);
+                index = end;
+            }
+            else
+            {
                 break;
-                }
             }
-        
-        if (last4[0] == '\r' && last4[1] == '\n' && last4[2] == '\r' && last4[3] == '\n')
-        {
-            //format OK
-            String data = buf.toString();
-            
-            String parts[] = data.split("\r\n");
-            
-            //parse the command line
-            String cmd_parts[] = parts[0].split(" ");
-            
-            if (cmd_parts[0].toLowerCase().equals("get"))
-                {
-                req.type = RequestType.GET;
-                }
-                else if (cmd_parts[0].toLowerCase().equals("post"))
-                {
-                req.type = RequestType.POST;
-                }
-            
-            req.resource = cmd_parts[1];
-            
-            req.headers = new HTTPHeader[parts.length-1];
-            
-            //parse the headers
-            for (int i = 1; i < parts.length; i++)
-            {
-                int ndx = parts[i].indexOf(":");
-                
-                String k = parts[i].substring(0, ndx).trim();
-                String v = parts[i].substring(ndx+1).trim();
-                
-                HTTPHeader nhdr = new HTTPHeader();
-                nhdr.key = k.toLowerCase();
-                nhdr.value = v;
-                
-                req.headers[i-1] = nhdr;
-            }
-        
-            return req;
         }
-        else
+        return form;
+    }
+
+    static void log(String s)
+    {
+        time = LocalDateTime.now();
+        try
         {
-            return null;
+            PrintWriter l = new PrintWriter(new FileOutputStream(new File(logPath), true));
+            l.append("[" + time.format(formatter) + "]: " + s + "\n");
+            l.close();
         }
+        catch (IOException e)
+        {
+            System.out.println("Error writing to log");
+            System.out.println("Failed to log: \"" + s + "\"");
+        }
+        
     }
 }

@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>
-            TeaServ Testbed
+            PointerServer: Cat Alert
         </title>
         <style>
             html {
@@ -61,7 +61,7 @@
                 <br><br>
                 <form action="/" method="POST" enctype="multipart/form-data">
                     <label for="duration">Alert duration (s): </label>
-                    <input type="number" value="30" name="duration" style="width:50px">
+                    <input type="number" value="30" min="6" max="120" name="duration" style="width:50px">
                     <input type="submit" name="cat">
                 </form>
             </div>
