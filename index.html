@@ -19,12 +19,13 @@
                 margin: auto;  
             }
             .content {
-              max-width: 500px;
-              margin: auto;
+                max-width: 500px;
+                margin: auto;
+                padding: 10px;
             }
         </style>
         <script>
-            var myVar = setInterval(refresh, 5000);
+            var func = setInterval(refresh, 5000);
             function refresh()
             {
                 var xhttp = new XMLHttpRequest();
@@ -43,15 +44,37 @@
                 xhttp.send();
             }
         </script>
+        <script>
+            function getPostData()
+            {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function()
+                {
+                    if (this.readyState == 4 && this.status == 200)
+                    {
+                        var inner;
+                        if (this.responseText != "")
+                        {
+                            inner = this.responseText;
+                        }
+                        else
+                        {
+                            inner = "<span>No post reported.</span>";
+                        }
+                        document.getElementById("divPost").innerHTML = inner;
+                    }
+                };
+                xhttp.open("GET", "/postData", true);
+                xhttp.send();
+            }
+            getPostData();
+        </script>
     </head>
     <body style="font-family: sans-serif;">
         <div>
             <span>Code maintained at <a href="https://github.com/lucadavies/PointerServer">https://github.com/lucadavies/PointerServer</a></span>
         </div>
         <div class="header">
-            <h1>
-                This page will send an alert if somebody has sighted a cat.
-            </h1>
             <h1 style="color:red">
                 This server will be offline due to the delivered hardware having lost a PCB component.
             </h1>
@@ -59,6 +82,7 @@
                 As to how it's running it all? Your guess is as good as mine. A transistor or similar has literally fallen off the PCB.
             </h3>
             <div class="content">
+                <h2>Sight a cat!</h2>
                 <div>
                     <img src="res/stickman.png" height="200px">
                     <img src="res/cat.png" height="200px">
@@ -72,7 +96,17 @@
                     <input type="submit" name="cat">
                 </form>
             </div>
-            
+            <div class="content">
+                <hr>
+                <h2>Report post</h2>
+                <div id="divPost" style="margin:10px;">
+                </div>
+                <form action="/" method="POST" enctype="multipart/form-data">
+                    <label for="name">Who has post? </label>
+                    <input type="text" name="name" style="width:100px" required pattern="[a-zA-Z\s]+">
+                    <input type="submit" name="repPost">
+                </form>
+            </div>
         </div>
     </body>
 </html>

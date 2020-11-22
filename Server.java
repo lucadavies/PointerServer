@@ -51,6 +51,7 @@ public class Server
     static PrintWriter log;
     static LocalDateTime time;
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSS");
+    static HashMap<String, Integer> postData = new HashMap<String, Integer>();
 
     public static void main(String[] args) throws Exception 
     {
@@ -123,13 +124,15 @@ public class Server
                 t.getResponseHeaders().set("content-type", "text/html");
                 t.sendResponseHeaders(200, resp.length);
                 t.getResponseBody().write(resp);
-            } else if (uri.matches("/favicon.ico"))
+            }
+            else if (uri.matches("/favicon.ico"))
             {
                 resp = getFile("favicon.ico");
                 t.getResponseHeaders().set("content-type", "attachment");
                 t.sendResponseHeaders(200, resp.length);
                 t.getResponseBody().write(resp);
-            } else if (uri.matches("/refresh"))
+            }
+            else if (uri.matches("/refresh"))
             {
                 resp = "false".getBytes();
                 if (getCatStatus())
@@ -137,6 +140,37 @@ public class Server
                     resp = "true".getBytes();
                 }
                 t.getResponseHeaders().set("content-type", "attachment");
+                t.sendResponseHeaders(200, resp.length);
+                t.getResponseBody().write(resp);
+            }
+            else if (uri.matches("/postData"))
+            {
+                if (postData.size() != 0)
+                {
+                    String html = "";
+                    html += "<table style=\"width:100%\"><tbody>";
+                    html += "<tr><th style=\"text-align:left\">Name</th><th style=\"text-align:left\">No.</th><th style=\"text-align:left\"></th></tr>";
+                    for (String p : postData.keySet())
+                    {
+                        html += "<tr>";
+                        html += "<td>" + p + "</td>";
+                        html += "<td>" + postData.get(p) + "</td>";
+                        html += "<td>";
+                        html += "<form action=\"/\" method=\"POST\" enctype=\"multipart/form-data\">";
+                        html += "<button type=\"submit\" name=\"remPost\" value=\"" + p + "\" >Collect</button>";
+                        html += "</form>";
+                        html += "</td>";
+                        html += "</tr>";
+                    }
+                    html += "</tbody></table>";
+                    resp = html.getBytes();
+                }
+                else
+                {
+                    resp = "<p>No post reported yet</p>".getBytes();
+                }
+                
+                t.getResponseHeaders().set("content-type", "text/plain");
                 t.sendResponseHeaders(200, resp.length);
                 t.getResponseBody().write(resp);
             }
@@ -172,6 +206,22 @@ public class Server
                     }
                     setCatStatus(true);
                     new Thread(catReset).start();
+                }
+                else if (form.keySet().contains("repPost")) //report post
+                {
+                    String name = form.get("name");
+                    if (!postData.keySet().contains(name)) //if not in post data set
+                    {
+                        postData.put(name, 1);
+                    }
+                    else
+                    {
+                        postData.put(name, postData.get(name) + 1); //else add one to current value
+                    }
+                }
+                else if (form.keySet().contains("remPost")) //collect post
+                {
+                    postData.remove(form.get("remPost"));
                 }
                 byte[] resp = getHTML("index.html");
                 t.getResponseHeaders().set("content-type", "text/html");
