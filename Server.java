@@ -56,7 +56,7 @@ public class Server
     public static void main(String[] args) throws Exception 
     {
         log = new PrintWriter(logPath);
-        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress(80), 0);
         server.createContext("/", new HanRoot());
         server.createContext("/res", new HanRes());
         server.setExecutor(null); // creates a default executor
