@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -48,14 +50,16 @@ public class Server
     static int catTime;
     private static boolean catSpotted = false;
     static String logPath = "server.log";
-    static PrintWriter log;
+    static String postPath = "post.txt";
     static LocalDateTime time;
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSS");
     static HashMap<String, Integer> postData = new HashMap<String, Integer>();
 
     public static void main(String[] args) throws Exception 
     {
-        log = new PrintWriter(logPath);
+        System.out.println("Server booting...");
+        System.out.println("Loading post data...");
+        loadPostData();
         HttpServer server = HttpServer.create(new InetSocketAddress(80), 0);
         server.createContext("/", new HanRoot());
         server.createContext("/res", new HanRes());
@@ -218,10 +222,12 @@ public class Server
                     {
                         postData.put(name, postData.get(name) + 1); //else add one to current value
                     }
+                    updatePostLog();
                 }
                 else if (form.keySet().contains("remPost")) //collect post
                 {
                     postData.remove(form.get("remPost"));
+                    updatePostLog();
                 }
                 byte[] resp = getHTML("index.html");
                 t.getResponseHeaders().set("content-type", "text/html");
@@ -257,7 +263,7 @@ public class Server
                 t.sendResponseHeaders(404, resp.length);
                 t.getResponseBody().write(resp);
             }     
-            t.close();       
+            t.close();
         }
 
         private void get(String uri) throws IOException
@@ -327,6 +333,24 @@ public class Server
         return form;
     }
 
+    static void loadPostData()
+    {
+        try
+        {
+            Scanner scanner = new Scanner(new File(postPath));
+            while (scanner.hasNextLine())
+            {
+                String[] dat = scanner.nextLine().split(",");
+                postData.put(dat[0], Integer.parseInt(dat[1]));
+            }
+        }
+        catch (IOException e)
+        {
+            System.out.println("Error read post log.");
+        }
+        
+    }
+
     static void log(String s)
     {
         time = LocalDateTime.now();
@@ -338,9 +362,26 @@ public class Server
         }
         catch (IOException e)
         {
-            System.out.println("Error writing to log");
+            System.out.println("Error writing to log.");
             System.out.println("Failed to log: \"" + s + "\"");
         }
         
+    }
+
+    static void updatePostLog()
+    {
+        try
+        {
+            PrintWriter l = new PrintWriter(new FileOutputStream(new File(postPath), false));
+            for (String s : postData.keySet())
+            {
+                l.write(s + "," + postData.get(s) + "\n");
+            }
+            l.close();
+        }
+        catch (IOException e)
+        {
+            System.out.println("Error writing to post log.");
+        }
     }
 }
