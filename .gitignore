@@ -1,3 +1,5 @@
 *.class
-connect.txt
 *.log
+connect.log
+post.txt
+
