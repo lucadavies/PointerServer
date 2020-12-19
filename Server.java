@@ -147,6 +147,13 @@ public class Server
                 t.sendResponseHeaders(200, resp.length);
                 t.getResponseBody().write(resp);
             }
+            else if (uri.matches("/transfer"))
+            {
+                resp = getFile("transfer.file");
+                t.getResponseHeaders().set("content-type", "attachment");
+                t.sendResponseHeaders(200, resp.length);
+                t.getResponseBody().write(resp);
+            }
             else if (uri.matches("/postData"))
             {
                 if (postData.size() != 0)
