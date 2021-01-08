@@ -79,6 +79,17 @@
                 Pointer House Server
             </h1>
             <div class="content">
+                <hr>
+                <h2>Delivered Post:</h2>
+                <div id="divPost" style="margin:10px;">
+                </div>
+                <form action="/" method="POST" enctype="multipart/form-data">
+                    <label for="name">Who has post? </label>
+                    <input type="text" name="name" style="width:100px" required pattern="[A-Za-z]+( [A-Za-z]+)*">
+                    <input type="submit" name="repPost">
+                </form>
+            </div>
+            <div class="content">
                 <h2>Sight a cat!</h2>
                 <div>
                     <img src="res/stickman.png" height="200px">
@@ -91,17 +102,6 @@
                     <label for="duration">Alert duration (s): </label>
                     <input type="number" value="30" min="6" max="120" name="duration" style="width:50px">
                     <input type="submit" name="cat">
-                </form>
-            </div>
-            <div class="content">
-                <hr>
-                <h2>Delivered Post:</h2>
-                <div id="divPost" style="margin:10px;">
-                </div>
-                <form action="/" method="POST" enctype="multipart/form-data">
-                    <label for="name">Who has post? </label>
-                    <input type="text" name="name" style="width:100px" required pattern="[A-Za-z]+( [A-Za-z]+)*">
-                    <input type="submit" name="repPost">
                 </form>
             </div>
         </div>
